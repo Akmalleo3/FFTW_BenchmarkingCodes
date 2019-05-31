@@ -1,6 +1,7 @@
 #include <utils.h>
 #include <fftw3.h>
 #include <math.h>
+#include <omp.h>
 #include <iostream>
 
 
@@ -13,12 +14,11 @@ int main(int argc, char ** argv){
 
   //Baked in parameters:
   //DOUBLE PRECISION
-  //SINGLE THREADED - to do 
   //SINGLE DIMENSION - to do
 
   if(argc < 4){
 
-    std::cout << "Usage: \n ./fftwBenchMark [n_iterations] [FFTW_PLAN_TYPE] [SIZE] \n for plan types {0:FFTW_MEASURE, 1:FFTW_ESTIMATE}";
+    std::cout << "Usage: \n ./fftwBenchMark [n_iterations] [FFTW_PLAN_TYPE] [SIZE] \n for plan types {0:FFTW_MEASURE, 1:FFTW_ESTIMATE, 2: FFTW_PATIENT, 3: FFTW_EXHAUSTIVE}";
     std::cout << std::endl ;
     exit(1);
 
@@ -27,18 +27,49 @@ int main(int argc, char ** argv){
   unsigned int fftwPlanType;
 
   int n_iters = std::stoi(argv[1]); 
+
+  std::string planType;
+  std::string measure("FFTW_MEASURE");
+  std::string estimate("FFTW_ESTIMATE");
+  std::string patient("FFTW_PATIENT");
+  std::string exhaustive("FFTW_EXHAUSTIVE");
+
   
   switch(std::stoi(argv[2])){
   case 0:
     fftwPlanType = FFTW_MEASURE;
+    planType = measure;
     break;
   case 1:
     fftwPlanType = FFTW_ESTIMATE;
+    planType = estimate;
+    break;
+  case 2:
+    fftwPlanType = FFTW_PATIENT;
+    planType = patient;
+    break;
+  case 3:
+    fftwPlanType = FFTW_EXHAUSTIVE;
+    planType = exhaustive;
     break;
   default: //incorrect usage- default to estimate
     fftwPlanType = FFTW_ESTIMATE;
+    planType = estimate;
   }
-  
+
+  //prepare for multithreaded fftw
+  int err = fftw_init_threads();
+  if(!err){
+    std::cout << "fftw_init_threads failed" << std::endl;
+    return 1;
+  }
+
+  int max_threads = omp_get_max_threads();
+  fftw_plan_with_nthreads(max_threads);
+  std::cout << "calls to fftw_execute will utilize " << max_threads << " threads" << std::endl;
+
+  FFTW_FORGET_WISDOM();
+
   CNTime timer; 
 
   size_t size(std::stoi(argv[3]));
@@ -50,10 +81,6 @@ int main(int argc, char ** argv){
   out = fftw_alloc_complex(size);
 
   std::cout << "*---------------------------------------------------------------------*" << std::endl;
-  std::string planType;
-  std::string measureString("FFTW_MEASURE");
-  std::string estimateString("FFTW_ESTIMATE");
-  fftwPlanType == 0 ? planType = measureString : planType = estimateString;
   std::cout << "Executing " << n_iters << " iterations with a shared plan of type " << planType << std::endl; 
 
   timer.start();
@@ -86,12 +113,14 @@ int main(int argc, char ** argv){
   fftw_free(in); fftw_free(out); // no error checking yet
 
 
+
   //Remove the advantage of collected wisdom
   FFTW_FORGET_WISDOM();
 
   std::cout << "*---------------------------------------------------------------------*" << std::endl;
   std::cout << "Executing " << n_iters << " iterations, initializing a new " << planType << " plan each time " << std::endl;
 
+  
   fftw_complex *in2, *out2;
   fftw_plan p2;
   in2 = fftw_alloc_complex(size); 
@@ -129,7 +158,7 @@ int main(int argc, char ** argv){
   
   fftw_destroy_plan(p2);
   fftw_free(in2); fftw_free(out2);
-
+  fftw_cleanup_threads();
   FFTW_FORGET_WISDOM();
 
 }
