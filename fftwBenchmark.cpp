@@ -147,8 +147,9 @@ int main(int argc, char ** argv){
     totalExecTime1 += executeTime;
 
   }
-  std::cout << "Total Execution Time: " << totalExecTime1 << std::endl; 
-  std::cout << "Final Total for this trial: " << planConstruction1 + totalExecTime1 << std::endl;
+  std::cout << "Total Execution Time: " << totalExecTime1 << std::endl;
+  double total1 = planConstruction1 + totalExecTime1;
+  std::cout << "Total for this trial: " << total1 << std::endl;
   fftw_destroy_plan(p);
   fftw_free(in); fftw_free(out); // no error checking yet
 
@@ -170,23 +171,25 @@ int main(int argc, char ** argv){
   out2 = fftw_alloc_complex(contiguousArraySize);
 
   double planConstruction2;
-  double totalPlanConstruction2{0};
+  double planRepeated2=0.0, regendata2 = 0.0;
   double totalExecTime2{0};
 
   for(int i = 0; i < n_iters; i++){
     timer.restart();
     p2 = fftw_plan_dft(n_dims, n, in2, out2, FFTW_FORWARD, fftwPlanType);
-    planConstruction2 = timer.elapsedsec();
-    if(i == 0){
+    if(i == 0) {
+      planConstruction2 = timer.elapsedsec();
       std::cout << "Time in first call to construct plan: " << planConstruction2 << std::endl;
-     }
-    totalPlanConstruction2 += planConstruction2; 
+    } else
+      planRepeated2 += timer.elapsedsec(); 
 
     //initialize data for this round
+    timer.restart();
     for(int k = 0; k < contiguousArraySize; k++){
       in2[k][0] = M_PI*randm11r(&dummy);
       in2[k][1] = M_PI*randm11r(&dummy);
     }
+    regendata2 += timer.elapsedsec(); 
 
     timer.restart();
     fftw_execute(p2);
@@ -195,9 +198,13 @@ int main(int argc, char ** argv){
     
   }
   
-  std::cout << "Total Time for Construction of all plans: " << totalPlanConstruction2 << std::endl;
+  std::cout << "First plan Construction: " << planConstruction2 << std::endl;
   std::cout << "Total Time for Execution " << totalExecTime2 << std::endl;
-  std::cout << "Final Total for this Trial: " << totalPlanConstruction2 + totalExecTime2 << std::endl;
+  std::cout << "Total later plans: " << planRepeated2 << std::endl;
+  std::cout << "Mean time for later plan (us): " << 1e6*planRepeated2/(n_iters-1) << std::endl;
+  double total2 = planRepeated2+totalExecTime2+planConstruction2+regendata2;
+  std::cout << "Total time for expt 2: " << total2 << std::endl;
+    std::cout << "Total time both: " << total1+total2 << std::endl;
   
   fftw_destroy_plan(p2);
   fftw_free(in2); fftw_free(out2);
