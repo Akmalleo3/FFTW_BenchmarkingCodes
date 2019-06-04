@@ -6,15 +6,16 @@
 
 
 /*A Preliminary FFTW benchmark driver that compares
-  performance running n fftw executes with either a
-  single plan or n plans.  
+  performance running n fftw executes with
+  -single plan 
+  -n plans
+  -a single many_plan from the advanced interface
 
 */
 int main(int argc, char ** argv){
 
   //Baked in parameters:
   //DOUBLE PRECISION
-  //SINGLE DIMENSION - to do
 
   if(argc < 5){
 
@@ -23,7 +24,7 @@ int main(int argc, char ** argv){
     exit(1);
 
   }
-
+  
   unsigned int fftwPlanType;
 
   int n_iters = std::stoi(argv[1]); 
@@ -72,7 +73,9 @@ int main(int argc, char ** argv){
   int n_threads = threadsArg == 0 ? max_threads : threadsArg;
   if (n_threads > max_threads)
     n_threads = max_threads; //ensure user did not specify too many threads
-    
+
+  std::cout << "******************************************************************************" << std::endl;
+  std::cout << "************./fftwBenchmark " << argv[1] << "   " << argv[2] << "    " << argv[3] << "   " << argv[4] << "*******************************" << std::endl; 
   
   //unless user specified single threaded
   if(n_threads != 1){ 
@@ -96,9 +99,11 @@ int main(int argc, char ** argv){
 
   //allocate result array and set up dimension array
   size_t arraySize;
-  int dims[3]{0,0,0}; 
-  int idist; // parameter for plan_many
-  int odist; //parameter for plan_many
+  int dims[3]{0,0,0};
+
+  // distance in array between first input value of iteration (n) and first input  value of iteration (n+1)
+  int idist; 
+  int odist; //same but in output array
 
   switch(n_dims){
   case 1:
@@ -221,16 +226,20 @@ int main(int argc, char ** argv){
   FFTW_FORGET_WISDOM();
 
 
+  if(threadsArg != 1)
+    fftw_plan_with_nthreads(n_threads);
+
+  
   int totalSize = arraySize*n_iters;
   
-  std::cout << "*-------------------------------------------------------------------------*" << std::endl;
-  std::cout << "Executing " << n_iters << " iterations, sharing a single fftw_plan_many_dft of type" << planType  << std::endl;
+  std::cout << "*----------------------------------------------------------------------*" << std::endl;
+  std::cout << "Executing " << n_iters << " iterations, sharing a single fftw_plan_many_dft of type " << planType  << std::endl;
   
   int istride = 1;
   int ostride = 1; //array is contiguous in memory
 
 
-  std::cout << "Attempting to allocate an array of " << totalSize << "  elements" << std::endl; 
+  std::cout << "Attempting to allocate an array of " << totalSize << "  elements:  " ; 
 
   //allocate space for in and out arrays for all n_iter executions
   //contiguous in memory
@@ -241,7 +250,7 @@ int main(int argc, char ** argv){
 
   if(in3 == NULL | out3 == NULL){
 
-    std::cout << "program parameters request too large a memory allocation for trial 3.  \n Aim for fewer iterations and smaller points in each dimension" << std::endl; 
+    std::cout << "\nprogram parameters request too large a memory allocation for trial 3.  \n Aim for fewer iterations and smaller points in each dimension" << std::endl; 
   return 1;
   }
 
@@ -267,7 +276,7 @@ int main(int argc, char ** argv){
   double total3 = planConstruction3 + totalExecTime3;
   std::cout << "Total time for expt 3: " << total3 << std::endl;
 
-  std::cout << "*----------------------------------------------------------*" << std::endl;
+  std::cout << "*--------------------------------------------------------------------*" << std::endl;
   std::cout << "Total time : " << total1+total2+total3 << std::endl;
 
   fftw_destroy_plan(p3);
