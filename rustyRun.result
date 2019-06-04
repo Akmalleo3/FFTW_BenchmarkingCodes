@@ -1,0 +1,38 @@
+------------Timing overhead of repeated construction of FFTW plans-----------------------
+
+A main objective of benchmarking the FFTW library was to determine the overhead
+of repeated construction of fftw plans, in instances of repeated fft execution.
+
+The fftwBenchmark compares such a scheme with the alternative: a single instantiation of a plan used
+across repeated fft executions, using both the basic and advanced plan_many interface.
+
+
+-----------Plan overhead vs. dimension-------------------------------------
+1 D: Mean time for later plan (us): 177.612
+2 D: Mean time for later plan (us): 819.127
+3 D: Mean time for later plan (us): 990.665
+
+
+-----------Plan overhead vs. thread count-------------------------------------
+1 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 16.0029
+2 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 37.0127
+3 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 47.3586
+4 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 49.6465
+5 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 61.3169
+6 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 71.0174
+7 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 102.631
+8 threads, 100 trials, 1 D, size 900: Mean time for later plan (us): 116.847
+
+
+-------Plan overhead vs. Number of FFTW Executions ----------------------------
+10 trials, 1 D, 8 threads, size 900: Mean time for later plan (us): 136.243
+50 trials, 1 D, 8 threads, size 900: Mean time for later plan (us): 134.453
+100 trials, 1 D, 8 threads, size 900: Mean time for later plan (us): 132.544
+500 trials, 1 D, 8 threads, size 900: Mean time for later plan (us): 140.325
+1000 trials, 1 D, 8 threads, size 900: Mean time for later plan (us): 140.824
+
+
+----Plan overhead vs. Plan Type {0: MEASURE, 1:ESTMATE, 2:PATIENT, 3:EXHAUSTIVE}--------
+Type 0, 100 trials, 2 D, 8 threads, size 30: Mean time for later plan (us): 818.491
+Type 1, 100 trials, 2 D, 8 threads, size 30: Mean time for later plan (us): 776.927
+Types 2 and 3 were omitted due to unreasonable delays- comment back in at your own risk
